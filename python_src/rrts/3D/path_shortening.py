@@ -27,7 +27,38 @@ def isCollisionFreeEdge(obstacles, closest_vert, p):
 
     return collFree
 
-def shorten_path(P, obstacles, smoothiters=10):
+
+# Convert xyz-data to a parametrized curve
+# calculate all all distances between the points
+# generate the coordinates on the curve by cumulative summing
+# interpolate the x- and y-coordinates independently with respect to the new coords
+def interpolate(P, size):
+    x, y, z = P.T
+    xd = np.diff(x)
+    yd = np.diff(y)
+    zd = np.diff(z)
+    dist = np.sqrt(xd**2 + yd**2 + yd**2)
+    u = np.cumsum(dist)
+    u = np.hstack([[0], u])
+
+    t = np.linspace(0, u.max(), size)
+    xn = np.interp(t, u, x)
+    yn = np.interp(t, u, y)
+    zn = np.interp(t, u, z)
+
+    # f = plt.figure()
+    # ax = plt.axes(projection='3d')
+    # ax.plot(x, y, z, 'o', alpha=0.3)
+    # ax.plot(xn, yn, zn, 'ro', markersize=2)
+    # ax.set_xlim([-2.5, 2.5])
+    # ax.set_ylim([-2.5, 2.5])
+    # ax.set_zlim([0.0, 3.0])
+    
+    path = np.column_stack((xn, yn, zn))
+    # path.reshape((size, 3))
+    return path
+
+def shorten_path(P, obstacles, size=10, smoothiters=30): #10
     # INPUTS
     #   P - path to get smoothed (after RRT algorithm)
     #   obstacles - says where the obstacles are
@@ -71,16 +102,16 @@ def shorten_path(P, obstacles, smoothiters=10):
         if collisionFree == 0:
             iters = iters + 1
             continue
-#         print round(l[i],2), round(s1,2), round(l[i+1],2)
-#         plt.plot(P[i,0], P[i,1], 'ro', markersize=10, color='red')
-#         plt.plot(gamma1[0], gamma1[1], 'ro', markersize=10, color='green')
-#         plt.plot(P[i+1,0], P[i+1,1], 'ro', markersize=10, color='blue')
-#         plt.plot(P[j,0], P[j,1], 'ro', markersize=10, color='red')
-#         plt.plot(gamma2[0], gamma2[1], 'ro', markersize=10, color='green')
-#         plt.plot(P[j+1,0], P[j+1,1], 'ro', markersize=10, color='blue')
-#         plt.plot([gamma1[0], gamma2[0]], [gamma1[1], gamma2[1]], color='k', linewidth=5)
+        # print (round(l[i],2), round(s1,2), round(l[i+1],2))
+        # plt.plot(P[i,0], P[i,1], 'ro', markersize=10, color='red')
+        # plt.plot(gamma1[0], gamma1[1], 'ro', markersize=10, color='green')
+        # plt.plot(P[i+1,0], P[i+1,1], 'ro', markersize=10, color='blue')
+        # plt.plot(P[j,0], P[j,1], 'ro', markersize=10, color='red')
+        # plt.plot(gamma2[0], gamma2[1], 'ro', markersize=10, color='green')
+        # plt.plot(P[j+1,0], P[j+1,1], 'ro', markersize=10, color='blue')
+        # plt.plot([gamma1[0], gamma2[0]], [gamma1[1], gamma2[1]], color='k', linewidth=5)
 
-#         print round(l[j],2), round(s2,2), round(l[j+1],2)
+        # print (round(l[j],2), round(s2,2), round(l[j+1],2))
         P = np.vstack([P[:(i+1),:], gamma1, gamma2, P[(j+1):m,:]])
         m = P.shape[0]
         l = np.zeros(m)
@@ -88,6 +119,9 @@ def shorten_path(P, obstacles, smoothiters=10):
             l[k] = norm( P[k,:] - P[k-1,:] ) + l[k-1]
         iters = iters + 1
 #         plt.plot(P[:,0], P[:,1], '--', linewidth=3)
-    P_smooth = P
+    
+    P_smooth = interpolate(P, size)
+    print("Final Path Length: {}".format(len(P_smooth)))
+    print("Final Path: {}".format(P_smooth))
     
     return P_smooth

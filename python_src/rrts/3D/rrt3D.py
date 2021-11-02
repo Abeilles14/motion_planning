@@ -12,11 +12,28 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 from tools import init_fonts
 from path_shortening import shorten_path
 
+### CONSTANTS ###
+pause_time = 0.0005
+
+### PARAMETERS ###
+show_RRT = False
+
+### SET UP ENV ###
+init_fonts()
+fig = plt.figure(figsize=(15,15))
+ax = plt.axes(projection='3d')
+ax.set_xlabel('X, [m]')
+ax.set_ylabel('Y, [m]')
+ax.set_zlabel('Z, [m]')
+ax.set_xlim([-2.5, 2.5])
+ax.set_ylim([-2.5, 2.5])
+ax.set_zlim([0.0, 3.0])
+
 class Node3D:
     def __init__(self):
         self.p     = [0, 0, 0]
-        self.i     = 0
-        self.iPrev = 0
+        self.cost     = 0
+        self.costPrev = 0
 
 # class Vehicle:
 #     def __init__(self):
@@ -35,7 +52,8 @@ def isCollisionFreeVertex(obstacles, point):
     return 1
 
 def isCollisionFreeEdge(obstacles, closest_vert, p):
-    closest_vert = np.array(closest_vert); p = np.array(p)
+    closest_vert = np.array(closest_vert)
+    p = np.array(p)
     collFree = True
     l = norm(closest_vert - p)
     map_resolution = 0.01; M = int(l / map_resolution)
@@ -109,19 +127,12 @@ def add_obstacle(obstacles, pose, dim):
 	obstacles.append(obstacle)
 	return obstacles
 
-def main():
-    #### SET UP ENV ###
-    init_fonts()
-    fig = plt.figure(figsize=(15,15))
-    ax = plt.axes(projection='3d')
-    ax.set_xlabel('X, [m]')
-    ax.set_ylabel('Y, [m]')
-    ax.set_zlabel('Z, [m]')
-    ax.set_xlim([-2.5, 2.5])
-    ax.set_ylim([-2.5, 2.5])
-    ax.set_zlim([0.0, 3.0])
+# update vehicle positions every time step
+# def step():
 
-    #### SET UP OBSTACLES ####
+#### MAIN ####
+def main():
+    ### SET UP OBSTACLES ###
     # obstacles_poses = [ [-0.8, 0., 1.5], [ 1., 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
     # obstacles_dims  = [ [1.4, 1.0, 0.2], [1.0, 1.0, 0.2], [3.0, 1.0, 0.2], [3.0, 1.0, 0.2] ]
     obstacles_poses = [ [-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
@@ -137,26 +148,29 @@ def main():
     animate = 1
 
     # RRT Initialization
-    maxiters  = 500
+    maxiters  = 5000
     nearGoal = False # This will be set to true if goal has been reached
     minDistGoal = 0.05 # Convergence criterion: success when the tree reaches within 0.25 in distance from the goal.
-    d = 0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
+    d = 0.1#0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
 
     # Start and goal positions
-    start = np.array([0.0, 0.0, 0.0]); ax.scatter3D(start[0], start[1], start[2], color='green', s=100)
-    goal =  np.array([0.0, 0.5, 2.5]);  ax.scatter3D(goal[0], goal[1], goal[2], color='red', s=100)
+    # start = np.array([0.0, 0.0, 0.0])
+    # goal =  np.array([0.0, 0.5, 2.5])
+    start = np.array([0.0, 0.0, 0.0])
+    goal =  np.array([0.0, 1, 2.5])
+    ax.scatter3D(start[0], start[1], start[2], color='green', s=100)
+    ax.scatter3D(goal[0], goal[1], goal[2], color='red', s=100)
 
     # Initialize RRT. The RRT will be represented as a 2 x N list of points.
     # So each column represents a vertex of the tree.
     rrt = []    # list of vertex
     start_node = Node3D()
     start_node.p = start
-    start_node.i = 0
-    start_node.iPrev = 0
+    start_node.cost = 0
+    start_node.costPrev = 0
     rrt.append(start_node)
 
-
-    # RRT algorithm
+    ### RRT ALGORITHM ###
     start_time = time.time()
     iters = 0
     while not nearGoal and iters < maxiters:
@@ -184,12 +198,13 @@ def main():
         # distance between new_vert and closest_vert should be d.
         new_node = Node3D()
         new_node.p = closest_node.p + d * (p - closest_node.p)
-        new_node.i = len(rrt)
-        new_node.iPrev = closest_node.i
+        new_node.cost = len(rrt)
+        new_node.costPrev = closest_node.cost
 
-        if animate:
+        # draw RRT node tree
+        if show_RRT:
             ax.plot([closest_node.p[0], new_node.p[0]], [closest_node.p[1], new_node.p[1]], [closest_node.p[2], new_node.p[2]],color = 'b', zorder=5)
-            plt.pause(0.01)
+            plt.pause(pause_time)
         
         # Check if new vertice is in collision
         collFree = isCollisionFreeEdge(obstacles, closest_node.p, new_node.p)
@@ -206,12 +221,12 @@ def main():
             # Add last, goal node
             goal_node = Node3D()
             goal_node.p = goal
-            goal_node.i = len(rrt)
-            goal_node.iPrev = new_node.i
+            goal_node.cost = len(rrt)
+            goal_node.costPrev = new_node.cost
             if isCollisionFreeEdge(obstacles, new_node.p, goal_node.p):
                 rrt.append(goal_node)
-                P = [goal_node.p]
-            else: P = []
+                path = [goal_node.p]
+            else: path = []
             end_time = time.time()
             nearGoal = True
             print ('Reached the goal after %.2f seconds:' % (end_time - start_time))
@@ -225,23 +240,29 @@ def main():
     print ('Constructing the path...')
     i = len(rrt) - 1
     while True:
-        i = rrt[i].iPrev
-        P.append(rrt[i].p)
+        i = rrt[i].costPrev
+        path.append(rrt[i].p)
         if i == 0:
             print ('Reached RRT start node')
             break
-    P = np.array(P)
-    # drawing a path from RRT
-    for i in range(P.shape[0]-1):
-        ax.plot([P[i,0], P[i+1,0]], [P[i,1], P[i+1,1]], [P[i,2], P[i+1,2]], color = 'g', linewidth=5, zorder=10)
+    path = np.array(path)
 
-    # shortened path
+    # drawing unoptimized RRT path
+    if show_RRT:
+        for i in range(path.shape[0]-1):
+            ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'g', linewidth=3, zorder=10)
+            plt.pause(pause_time)
+
+    ### DRAW SHORTENED PATH ###
     print ('Shortening the path...')
-    P = shorten_path(P, obstacles, smoothiters=100)
-    for i in range(P.shape[0]-1):
-        ax.plot([P[i,0], P[i+1,0]], [P[i,1], P[i+1,1]], [P[i,2], P[i+1,2]], color = 'orange', linewidth=5, zorder=15)
+    path = shorten_path(path, obstacles, size=80, smoothiters=100)
+    path = np.flip(path, axis=0)
+    for i in range(path.shape[0]-1):
+        ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=3, zorder=15)
+        plt.pause(pause_time)
 
-    plt.show()  
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
