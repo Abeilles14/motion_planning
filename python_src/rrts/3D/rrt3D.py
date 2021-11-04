@@ -1,3 +1,4 @@
+# STATE MACHINE FOR 3D PICK AND PLACE SIMULATION
 import numpy as np
 from numpy.linalg import norm
 from math import *
@@ -8,9 +9,11 @@ from scipy.spatial import ConvexHull
 from matplotlib import path
 import time
 from mpl_toolkits import mplot3d
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
-from tools import init_fonts
+from enum import Enum
+
+from utils import init_fonts
 from path_shortening import shorten_path
+from obstacles import Parallelepiped
 
 ### CONSTANTS ###
 pause_time = 0.0005
@@ -18,29 +21,11 @@ pause_time = 0.0005
 ### PARAMETERS ###
 show_RRT = False
 
-### SET UP ENV ###
-init_fonts()
-fig = plt.figure(figsize=(15,15))
-ax = plt.axes(projection='3d')
-ax.set_xlabel('X, [m]')
-ax.set_ylabel('Y, [m]')
-ax.set_zlabel('Z, [m]')
-ax.set_xlim([-2.5, 2.5])
-ax.set_ylim([-2.5, 2.5])
-ax.set_zlim([0.0, 3.0])
-
 class Node3D:
     def __init__(self):
         self.p     = [0, 0, 0]
         self.cost     = 0
         self.costPrev = 0
-
-# class Vehicle:
-#     def __init__(self):
-#         self.p     = [0, 0, 0]
-#         self.velocity = 0
-#         self.i     = 0
-#         self.iPrev = 0
 
 def isCollisionFreeVertex(obstacles, point):
     x,y,z = point
@@ -78,72 +63,7 @@ def closestNode3D(rrt, p):
 
     return closest_node
 
-
-def plot_point3D(p, color='blue'):
-    ax.scatter3D(p[0], p[1], p[2], color=color)
-
-# Add Obstacles
-class Parallelepiped:
-    def __init__(self):
-        self.dimensions = [0,0,0]
-        self.pose = [0,0,0]
-        self.verts = self.vertixes()
-        
-    def vertixes(self):
-        dx = self.dimensions[0]
-        dy = self.dimensions[1]
-        dz = self.dimensions[2]
-        C = np.array(self.pose)
-
-        Z = np.array([[-dx/2, -dy/2, -dz/2],
-                      [dx/2, -dy/2, -dz/2 ],
-                      [dx/2, dy/2, -dz/2],
-                      [-dx/2, dy/2, -dz/2],
-                      [-dx/2, -dy/2, dz/2],
-                      [dx/2, -dy/2, dz/2 ],
-                      [dx/2, dy/2, dz/2],
-                      [-dx/2, dy/2, dz/2]])
-        Z += C
-
-        # list of sides' polygons of figure
-        verts = [ [Z[0], Z[1], Z[2], Z[3]],
-                  [Z[4], Z[5], Z[6], Z[7]], 
-                  [Z[0], Z[1], Z[5], Z[4]], 
-                  [Z[2], Z[3], Z[7], Z[6]], 
-                  [Z[1], Z[2], Z[6], Z[5]],
-                  [Z[4], Z[7], Z[3], Z[0]] ]
-
-        return verts
-
-    def draw(self, ax):
-        ax.add_collection3d(Poly3DCollection(self.vertixes(), facecolors='k', linewidths=1, edgecolors='k', alpha=.25))
-
-
-### Obstacles ###
-def add_obstacle(obstacles, pose, dim):
-	obstacle = Parallelepiped()
-	obstacle.dimensions = dim
-	obstacle.pose = pose
-	obstacles.append(obstacle)
-	return obstacles
-
-# update vehicle positions every time step
-# def step():
-
-#### MAIN ####
-def main():
-    ### SET UP OBSTACLES ###
-    # obstacles_poses = [ [-0.8, 0., 1.5], [ 1., 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
-    # obstacles_dims  = [ [1.4, 1.0, 0.2], [1.0, 1.0, 0.2], [3.0, 1.0, 0.2], [3.0, 1.0, 0.2] ]
-    obstacles_poses = [ [-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
-    obstacles_dims  = [ [1.4, 1.0, 0.3], [3.0, 1.0, 0.3], [3.0, 1.0, 0.3] ]
-
-    obstacles = []
-    for pose, dim in zip(obstacles_poses, obstacles_dims):
-        obstacles = add_obstacle(obstacles, pose, dim)
-
-    for obstacle in obstacles: obstacle.draw(ax)
-
+def RRTStar(ax, obstacles):
     # parameters
     animate = 1
 
@@ -191,7 +111,6 @@ def main():
 
         # If it is collision free, find closest point in existing tree. 
         closest_node = closestNode3D(rrt, p)
-        
         
         # Extend tree towards xy from closest_vert. Use the extension parameter
         # d defined above as your step size. In other words, the Euclidean
@@ -247,7 +166,7 @@ def main():
             break
     path = np.array(path)
 
-    # drawing unoptimized RRT path
+    # Drawing unoptimized RRT path
     if show_RRT:
         for i in range(path.shape[0]-1):
             ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'g', linewidth=3, zorder=10)
@@ -263,6 +182,3 @@ def main():
 
 
     plt.show()
-
-if __name__ == '__main__':
-    main()
