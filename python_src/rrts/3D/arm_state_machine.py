@@ -13,6 +13,7 @@ from enum import Enum
 import logging
 
 from utils import init_fonts
+from rrt3D import RRTStar
 from path_shortening import shorten_path
 from obstacles import Parallelepiped
 from arm import Arm
@@ -40,7 +41,7 @@ class ArmStateMachine:
 
         if self.log_verbose:
             logging.debug("ArmStateMachine:__init__")
-            logging.debug("Arm: {}, Object: {}".format(self.arm.name(), self.obj.name()))
+            logging.debug('Arm: {}, Object: {}'.format(self.arm.get_name(), self.obj.get_name()))
 
         self.state_functions = {
             ArmState.APPROACH_OBJECT : self._approach_object,
@@ -60,7 +61,7 @@ class ArmStateMachine:
     ### STATE FUNCTIONS ###
     def _approach_object(self):
         if self.log_verbose:
-            logging.debug("Arm {} approaching Obj {} at {}".format(self.arm.name(), self.obj.name(), self.obj.position()))
+            logging.debug("Arm {} approaching Obj {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
         self._set_arm_dest(self.obj.position())
 
     def _approach_object_next(self):
@@ -71,14 +72,14 @@ class ArmStateMachine:
     
     def _grab_object(self):
         if self.log_verbose:
-            logging.debug("Arm {} grabbing Obj {} at {}".format(self.arm.name(), self.obj.name(), self.obj.position()))
+            logging.debug("Arm {} grabbing Obj {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
 
     def _grab_object_next(self):
         return ArmState.APPROACH_DEST
 
     def _approach_dest(self):
         if self.log_verbose:
-            logging.debug("Arm {} approaching Obj {} goal at {}".format(self.arm.name(), self.obj.name(), self.obj.goal()))
+            logging.debug("Arm {} approaching Obj {} goal at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.goal()))
         self._set_arm_dest(self.obj.goal())
 
     def _approach_dest_next(self):
@@ -89,7 +90,7 @@ class ArmStateMachine:
 
     def _drop_object(self):
         if self.log_verbose:
-            logging.debug("Arm {} dropping Obj {} at {}".format(self.arm.name(), self.obj.name(), self.obj.position()))
+            logging.debug("Arm {} dropping Obj {} at {}".format(self.arm.get_name(), self.obj.get_name(), self.obj.position()))
 
     def _drop_object_next(self):
         return ArmState.DONE
@@ -126,22 +127,31 @@ class ArmStateMachine:
     #     # the home state is used for arm state machines that are completely 
     #     # finished executing as determined by the parent state machine
     #     return ArmState.HOME 
+
+    # def halt(self):
+    #     # this sets the desired joint position to the current joint position
+    #     self.psm.move(self.psm.get_current_position(), blocking=False)
+
+    # def is_done(self):
+    #     if self.home_when_done:
+    #         return self.state == PickAndPlaceState.HOME and vector_eps_eq(self.psm.get_current_position().p, PSM_HOME_POS) 
+    #     else:
+    #         return self.state == PickAndPlaceState.DONE
     ### END STATE FUNCTIONS ###
 
     def _set_arm_dest(self, dest):
         if self.log_verbose:
-            logging.debug("Setting arm {} dest to {}".format(self.arm.name(), dest))
+            logging.debug("Setting arm {} dest to {}".format(self.arm.get_name(), dest))
         # Call RRTS algo to plan and execute path
-        if self.arm.position() != dest:
+        if (self.arm.position() != dest).all():
             RRTStar(self.ax, self.obstacles, self.arm.position(), dest)
 
     def run_once(self):
         if self.log_verbose:
             logging.debug("Running state {}".format(self.state))
-        if self.is_done():
+        if self.state == ArmState.DONE: #self.is_done():
             return
         # execute the current state
         self.state_functions[self.state]()
 
         self.state = self.next_functions[self.state]()
-

@@ -6,8 +6,8 @@ class Arm:
         self.vel = velocity
         self.pos = position
 
-    def name():
+    def get_name(self):
         return self.name
 
-    def position():
+    def position(self):
         return self.position

@@ -7,7 +7,7 @@ class Object:
         self.start = start
         self.goal = goal
 
-    def name(self):
+    def get_name(self):
         return self.name
 
     def position(self):

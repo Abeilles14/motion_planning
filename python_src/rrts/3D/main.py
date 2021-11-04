@@ -17,7 +17,7 @@ from obstacles import Parallelepiped
 from objects import Object
 from arm import Arm
 from rrt3D import RRTStar
-from arm_state_machine import ArmStateMachine
+from arm_state_machine import ArmStateMachine, ArmState
 
 ### CONSTANTS ###
 pause_time = 0.0005
@@ -66,7 +66,10 @@ def main():
     arm1 = Arm("PSM1", 5, OBJ1_START)
     obj1 = Object("OBJ1", arm1, OBJ1_START, OBJ1_GOAL)
     arm1_sm = ArmStateMachine(ax, obstacles, arm1, obj1)
-    # RRTStar(ax, obstacles, start, goal)
+    # RRTStar(ax, obstacles, OBJ1_START, OBJ1_GOAL)
+
+    while (arm1_sm.state != ArmState.DONE): #should be HOME
+        arm1_sm.run_once()
 
 if __name__ == '__main__':
     main()

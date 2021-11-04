@@ -54,7 +54,7 @@ def isCollisionFreeEdge(obstacles, closest_vert, p):
 def closestNode3D(rrt, p):
     distance = []
     for node in rrt:
-        distance.append( sqrt((p[0] - node.p[0])**2 + (p[1] - node.p[1])**2 + (p[2] - node.p[2])**2) )
+        distance.append(sqrt((p[0] - node.p[0])**2 + (p[1] - node.p[1])**2 + (p[2] - node.p[2])**2))
     distance = np.array(distance)
     
     dmin = min(distance)
