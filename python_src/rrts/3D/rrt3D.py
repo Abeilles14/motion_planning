@@ -63,7 +63,7 @@ def closestNode3D(rrt, p):
 
     return closest_node
 
-def RRTStar(ax, obstacles):
+def RRTStar(ax, obstacles, start, goal):
     # parameters
     animate = 1
 
@@ -73,11 +73,6 @@ def RRTStar(ax, obstacles):
     minDistGoal = 0.05 # Convergence criterion: success when the tree reaches within 0.25 in distance from the goal.
     d = 0.1#0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
 
-    # Start and goal positions
-    # start = np.array([0.0, 0.0, 0.0])
-    # goal =  np.array([0.0, 0.5, 2.5])
-    start = np.array([0.0, 0.0, 0.0])
-    goal =  np.array([0.0, 1, 2.5])
     ax.scatter3D(start[0], start[1], start[2], color='green', s=100)
     ax.scatter3D(goal[0], goal[1], goal[2], color='red', s=100)
 
@@ -179,6 +174,5 @@ def RRTStar(ax, obstacles):
     for i in range(path.shape[0]-1):
         ax.plot([path[i,0], path[i+1,0]], [path[i,1], path[i+1,1]], [path[i,2], path[i+1,2]], color = 'orange', linewidth=3, zorder=15)
         plt.pause(pause_time)
-
 
     plt.show()
