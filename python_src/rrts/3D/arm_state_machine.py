@@ -65,7 +65,7 @@ class ArmStateMachine:
         self._set_arm_dest(self.obj.position())
 
     def _approach_object_next(self):
-        if self.arm.position() == self.obj.position():
+        if (self.arm.position() == self.obj.position()).all():
             return ArmState.GRAB_OBJECT
         else:
             return ArmState.APPROACH_OBJECT
@@ -83,7 +83,7 @@ class ArmStateMachine:
         self._set_arm_dest(self.obj.goal())
 
     def _approach_dest_next(self):
-        if self.arm.position() == self.obj.goal():
+        if (self.arm.position() == self.obj.goal()).all():
             return ArmState.DROP_OBJECT
         else:
             return ArmState.APPROACH_DEST 

@@ -10,6 +10,7 @@ from matplotlib import path
 import time
 from mpl_toolkits import mplot3d
 from enum import Enum
+import logging
 
 from utils import init_fonts
 from path_shortening import shorten_path
@@ -63,7 +64,7 @@ def closestNode3D(rrt, p):
 
     return closest_node
 
-def RRTStar(ax, obstacles, start, goal):
+def RRTStar(ax, obstacles, starts, goals, log_verbose=False):
     # parameters
     animate = 1
 
@@ -72,7 +73,9 @@ def RRTStar(ax, obstacles, start, goal):
     nearGoal = False # This will be set to true if goal has been reached
     minDistGoal = 0.05 # Convergence criterion: success when the tree reaches within 0.25 in distance from the goal.
     d = 0.1#0.5 # [m], Extension parameter: this controls how far the RRT extends in each step.
-
+    
+    start = np.array([0.0, 0.0, 0.0])
+    goal =  np.array([0.0, 1.0, 2.5])
     ax.scatter3D(start[0], start[1], start[2], color='green', s=100)
     ax.scatter3D(goal[0], goal[1], goal[2], color='red', s=100)
 
@@ -143,21 +146,24 @@ def RRTStar(ax, obstacles, start, goal):
             else: path = []
             end_time = time.time()
             nearGoal = True
-            print ('Reached the goal after %.2f seconds:' % (end_time - start_time))
+
+            if log_verbose:
+                logging.debug('Reached the goal after %.2f seconds:' % (end_time - start_time))
 
         iters += 1
 
-    print ('Number of iterations passed: %d / %d' %(iters, maxiters))
-    print ('RRT length: ', len(rrt))
+    if log_verbose:
+        logging.debug('Number of iterations passed: %d / %d' %(iters, maxiters))
+        logginb.debug('RRT length: ', len(rrt))
 
     # Path construction from RRT:
-    print ('Constructing the path...')
+    logging.info('Constructing the path...')
     i = len(rrt) - 1
     while True:
         i = rrt[i].costPrev
         path.append(rrt[i].p)
         if i == 0:
-            print ('Reached RRT start node')
+            logging.info(print('Reached RRT start node'))
             break
     path = np.array(path)
 
@@ -168,7 +174,7 @@ def RRTStar(ax, obstacles, start, goal):
             plt.pause(pause_time)
 
     ### DRAW SHORTENED PATH ###
-    print ('Shortening the path...')
+    logging.info('Shortening the path...')
     path = shorten_path(path, obstacles, size=80, smoothiters=100)
     path = np.flip(path, axis=0)
     for i in range(path.shape[0]-1):

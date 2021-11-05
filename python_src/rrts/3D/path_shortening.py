@@ -3,6 +3,7 @@ import numpy as np
 from numpy.linalg import norm
 from matplotlib import pyplot as plt
 from random import random
+import logging
 
 def isCollisionFreeVertex(obstacles, point):
     x,y,z = point
@@ -58,7 +59,7 @@ def interpolate(P, size):
     # path.reshape((size, 3))
     return path
 
-def shorten_path(P, obstacles, size=10, smoothiters=30): #10
+def shorten_path(P, obstacles, size=10, smoothiters=30, log_verbose=False): #10
     # INPUTS
     #   P - path to get smoothed (after RRT algorithm)
     #   obstacles - says where the obstacles are
@@ -121,7 +122,8 @@ def shorten_path(P, obstacles, size=10, smoothiters=30): #10
 #         plt.plot(P[:,0], P[:,1], '--', linewidth=3)
     
     P_smooth = interpolate(P, size)
-    print("Final Path Length: {}".format(len(P_smooth)))
-    print("Final Path: {}".format(P_smooth))
+    if log_verbose:
+        logging.debug("Final Path Length: {}".format(len(P_smooth)))
+        logging.debug("Final Path: {}".format(P_smooth))
     
     return P_smooth

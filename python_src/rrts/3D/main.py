@@ -54,8 +54,8 @@ def main():
      ### SET UP OBSTACLES ###
     # obstacles_poses = [ [-0.8, 0., 1.5], [ 1., 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
     # obstacles_dims  = [ [1.4, 1.0, 0.2], [1.0, 1.0, 0.2], [3.0, 1.0, 0.2], [3.0, 1.0, 0.2] ]
-    obstacles_poses = [ [-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5] ]
-    obstacles_dims  = [ [1.4, 1.0, 0.3], [3.0, 1.0, 0.3], [3.0, 1.0, 0.3] ]
+    obstacles_poses = [[-0.8, 0., 1.5], [ 0., 1., 1.5], [ 0.,-1., 1.5]]
+    obstacles_dims  = [[1.4, 1.0, 0.3], [3.0, 1.0, 0.3], [3.0, 1.0, 0.3]]
 
     obstacles = []
     for pose, dim in zip(obstacles_poses, obstacles_dims):
